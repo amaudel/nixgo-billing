@@ -14,7 +14,7 @@ Si no puedes o no quieres instalar Docker, usa un proyecto Supabase **nuevo, vac
 7. Dashboard → **Authentication → Sign In / Providers**: desactiva "Allow new users to sign up" (el panel no tiene auto-registro).
 8. Sigue desde el **paso 5** (arrancar y entrar) de esta guía, con tu correo y contraseña.
 
-Si `db push` falla por la conexión, alternativa: pegar a mano en el SQL Editor, **en orden**, cada archivo de `supabase/migrations/`.
+Si `db push` se queda colgado o falla por la conexión (por ejemplo en `Initialising login role…`), alternativa: abre `supabase/all-migrations.sql` (las 5 migraciones juntas, dentro de una transacción), pégalo completo en el **SQL Editor** y pulsa Run.
 
 ## Antes de empezar (ruta con Docker)
 - **Docker Desktop** instalado y **abierto** (que diga "running").
