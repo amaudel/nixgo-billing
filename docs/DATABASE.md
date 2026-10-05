@@ -5,8 +5,10 @@ Migraciones en `supabase/migrations/` (orden cronológico, inmutables una vez ap
 1. `…000001_core_schema.sql` — enums, tablas, índices, triggers, `next_sequential`.
 2. `…000002_rls.sql` — funciones de autorización, privilegios mínimos y políticas RLS.
 3. `…000003_dashboard_functions.sql` — `dashboard_stats`, `organization_overview` (security invoker).
+4. `…000004_emission_points_sequence_guard.sql` — privilegios por columna: el panel no puede tocar `current_sequence`.
+5. `…000005_invoice_api_functions.sql` — funciones de la API (solo `service_role`): `create_invoice_draft` (reserva atómica: idempotencia + cliente + secuencial + factura + ítems + evento; todo o nada), `invoice_detail`, `invoice_list`, `apply_provider_result` (solo transiciona facturas `pending`/`processing`). Todas reciben `organization_id` y ambiente explícitos.
 
-> Estado de verificación: sintaxis validada con el parser de Postgres (pglast). **Aún no ejecutadas contra una base real**: correr `supabase start` / `supabase db reset` y revisar errores antes de usar.
+> Estado de verificación: las 5 migraciones se aplican y se prueban en un Postgres 16 plano con `supabase/tests/run.sh` (emula roles y `auth` de Supabase; corre en CI): aislamiento RLS entre empresas e idempotencia/atomicidad de la API de facturas. **Pendiente:** repetirlo contra Supabase real (`supabase start`) y probar concurrencia real sobre una misma `Idempotency-Key`.
 
 ## Entidades
 
@@ -21,7 +23,7 @@ Migraciones en `supabase/migrations/` (orden cronológico, inmutables una vez ap
 | `invoices`, `invoice_items`, `electronic_documents` | Facturas, líneas y URLs de XML/RIDE |
 | `billing_events` | Auditoría append-only (trigger impide UPDATE/DELETE) |
 | `api_keys` | Credenciales de apps consumidoras (solo hash) |
-| `idempotency_keys` | Deduplicación de `POST /invoices` |
+| `idempotency_keys` | Deduplicación de `POST /invoices`. La clave se guarda como `<ambiente>:<Idempotency-Key>` (test y producción no se mezclan) |
 | `webhook_events` | Historial/idempotencia de webhooks (`unique(provider,event_id)`) |
 
 ### Diferencias respecto al borrador inicial (intencionales)

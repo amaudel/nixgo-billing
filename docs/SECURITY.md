@@ -24,7 +24,14 @@ Verificar la firma sobre el cuerpo crudo con comparación en tiempo constante, r
 Configuradas en `next.config.ts`: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS. **Pendiente:** Content-Security-Policy con nonces (ver guía de CSP de Next.js) antes de producción.
 
 ## Rate limiting
-Preparado, no implementado. Plan: límite por API key y por IP en `/api/v1/*` y `/api/webhooks/*` (p. ej. Upstash/Vercel KV) en la Fase 1.
+`/api/v1/*`: 120 peticiones/min por API key (`src/lib/api/rate-limit.ts`, ventana fija **en memoria**). Limitación conocida: en serverless cada instancia cuenta por separado, así que es protección de mejor esfuerzo. **Pendiente (Fase 4):** almacén compartido (Upstash/Vercel KV), límite por IP para intentos con claves inválidas y límite en `/api/webhooks/*`.
+
+## API pública (`/api/v1`)
+- Autenticación en `src/lib/api/auth.ts`: hash SHA-256 → fila de `api_keys` + organización; exige clave `active`, ambiente coherente con el prefijo (`nb_test_`↔`test`, `nb_live_`↔`production`), empresa `active` y *scope* (`invoices:read` / `invoices:write`). Todo fallo de identidad responde el mismo `401` genérico.
+- La empresa y el ambiente salen **solo** de la key; el cuerpo no puede indicarlos (validación estricta: campos desconocidos → 422).
+- Cuerpo máximo 256 KB; errores inesperados → `500` genérico (el detalle se registra sanitizado, sin cuerpo ni cabeceras).
+- Producción exige proveedor configurado explícitamente en `organization_provider_configs`; sin él, `409`. Las pruebas usan `mock`.
+- Gestión de claves en el panel (`/api-keys`): crear/revocar solo `organization_admin` o admin de plataforma; la clave completa se muestra una vez y solo se persiste el hash.
 
 ## Certificados de firma electrónica (CRÍTICO)
 
