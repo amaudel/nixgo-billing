@@ -1,4 +1,7 @@
 const SENSITIVE_KEY = /(password|passwd|secret|token|api[-_]?key|authorization|cookie|p12|pfx|certificate|private[-_]?key|signature)/i;
+// Metadatos no secretos que el patrón anterior capturaría por error (se necesitan en auditoría).
+const SAFE_KEY =
+  /^(?:(?:sri[-_]?)?authorization[-_]?(?:number|date)|certificate[-_]?(?:ref|expires[-_]?at)|(?:created[-_]?by[-_]?)?api[-_]?key[-_]?(?:id|prefix))$/i;
 const API_KEY_VALUE = /nb_(test|live)_[A-Za-z0-9_-]{10,}/g;
 const REDACTED = "[REDACTED]";
 
@@ -14,7 +17,7 @@ export function redactSecrets(value: unknown, depth = 0): unknown {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>).map(([k, v]) => [
         k,
-        SENSITIVE_KEY.test(k) ? REDACTED : redactSecrets(v, depth + 1),
+        SENSITIVE_KEY.test(k) && !SAFE_KEY.test(k) ? REDACTED : redactSecrets(v, depth + 1),
       ]),
     );
   }

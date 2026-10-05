@@ -52,6 +52,21 @@ describe("redactSecrets", () => {
     });
   });
 
+  it("conserva metadatos de auditoría que no son secretos", () => {
+    const meta = {
+      sri_authorization_number: "123",
+      certificate_ref: "ref-1",
+      certificate_expires_at: "2027-01-01",
+      created_by_api_key_id: "uuid",
+      authorizationNumber: "456",
+    };
+    expect(redactSecrets(meta)).toEqual(meta);
+    expect(redactSecrets({ certificate: "p12", authorization: "x" })).toEqual({
+      certificate: "[REDACTED]",
+      authorization: "[REDACTED]",
+    });
+  });
+
   it("oculta API keys de Nixgo incrustadas en textos", () => {
     const { key } = generateApiKey("live");
     expect(redactSecrets({ note: `usa ${key} ahora` })).toEqual({ note: "usa [REDACTED] ahora" });
