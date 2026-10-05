@@ -16,7 +16,7 @@ Migraciones en `supabase/migrations/` (orden cronológico, inmutables una vez ap
 | `organization_provider_configs` | Por empresa+ambiente: proveedor, `provider_company_ref`, `certificate_ref` (solo referencias) |
 | `organization_users` | Membresía y rol por empresa |
 | `platform_admins` | Administradores globales de la plataforma |
-| `establishments`, `emission_points` | Establecimientos y puntos de emisión; secuencial por punto |
+| `establishments`, `emission_points` | Establecimientos y puntos de emisión; secuencial por punto (`current_sequence` solo se modifica con `next_sequential()`; el panel no tiene permiso sobre esa columna) |
 | `customers` | Clientes por empresa |
 | `invoices`, `invoice_items`, `electronic_documents` | Facturas, líneas y URLs de XML/RIDE |
 | `billing_events` | Auditoría append-only (trigger impide UPDATE/DELETE) |
