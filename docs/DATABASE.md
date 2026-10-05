@@ -6,8 +6,8 @@ Migraciones en `supabase/migrations/` (orden cronológico, inmutables una vez ap
 2. `…000002_rls.sql` — funciones de autorización, privilegios mínimos y políticas RLS.
 3. `…000003_dashboard_functions.sql` — `dashboard_stats`, `organization_overview` (security invoker).
 4. `…000004_emission_points_sequence_guard.sql` — privilegios por columna: el panel no puede tocar `current_sequence`.
-6. `…000006_webhook_processing.sql` — índice único `(provider, provider_document_id)`, `webhook_events.organization_id/invoice_id` y `process_webhook_event` (idempotente, atómica, solo service role; la empresa se deduce de la factura, nunca del cuerpo del webhook).
 5. `…000005_invoice_api_functions.sql` — funciones de la API (solo `service_role`): `create_invoice_draft` (reserva atómica: idempotencia + cliente + secuencial + factura + ítems + evento; todo o nada), `invoice_detail`, `invoice_list`, `apply_provider_result` (solo transiciona facturas `pending`/`processing`). Todas reciben `organization_id` y ambiente explícitos.
+6. `…000006_webhook_processing.sql` — índice único `(provider, provider_document_id)`, `webhook_events.organization_id/invoice_id` y `process_webhook_event` (idempotente, atómica, solo service role; la empresa se deduce de la factura, nunca del cuerpo del webhook).
 
 > Estado de verificación: las 5 migraciones se aplican y se prueban en un Postgres 16 plano con `supabase/tests/run.sh` (emula roles y `auth` de Supabase; corre en CI): aislamiento RLS entre empresas e idempotencia/atomicidad de la API de facturas. Las migraciones también se aplicaron en un proyecto Supabase real de pruebas (vía `supabase/all-migrations.sql`) y la API funcionó contra él. **Pendiente:** probar concurrencia real sobre una misma `Idempotency-Key`.
 
