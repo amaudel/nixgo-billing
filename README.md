@@ -8,7 +8,7 @@ Aplicación cliente → Nixgo Billing API → Provider Adapter → Factuplan →
 
 Las apps cliente solo conocen Nixgo Billing; nunca llaman a Factuplan ni conocen el SRI ni los certificados. El proveedor se puede sustituir (Security Data, integración directa con el SRI…) sin tocar a los consumidores.
 
-**Estado: Fase 0 (fundación).** No emite facturas reales: el proveedor activo por defecto es `mock` y `FactuplanProvider` es un stub. Ver [docs/ROADMAP.md](docs/ROADMAP.md).
+**Estado: Fase 1 en curso (API de facturas contra `mock`).** No emite facturas reales: el proveedor activo por defecto es `mock` y `FactuplanProvider` es un stub. Ver [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
@@ -21,6 +21,8 @@ Next.js 16 (App Router) · TypeScript estricto · Tailwind CSS 4 · Supabase (Po
 - Supabase CLI (`npm i -g supabase`)
 
 ## Puesta en marcha local
+
+> Guía paso a paso (con datos de prueba y ejemplos `curl`): [docs/LOCAL.md](docs/LOCAL.md).
 
 ```bash
 npm install
