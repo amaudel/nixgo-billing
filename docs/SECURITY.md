@@ -18,7 +18,13 @@ RLS en todas las tablas + FK compuestas `(id, organization_id)` + filtrado expl�
 - Todo payload/response pasa por `redactSecrets()` (`src/lib/security/sanitize.ts`) antes de persistirse o loguearse. Nunca se registran API keys completas, contraseñas ni material de certificados.
 
 ## Webhooks
-Verificar la firma sobre el cuerpo crudo con comparación en tiempo constante, rechazar si no hay secreto configurado, y deduplicar por `(provider, event_id)`. Guardar el historial en `webhook_events`.
+Implementado en `POST /api/webhooks/[provider]` (`src/lib/webhooks/`):
+- Sin API keys ni cookies: la autenticidad es la **firma** del proveedor sobre el cuerpo **crudo** (comparación en tiempo constante); sin secreto configurado se rechaza todo. Factuplan responde `501` hasta implementarse.
+- Tras verificar, el contenido se valida igualmente con Zod (id de evento, tipo, estado dentro del dominio, fechas) y el payload pasa por `redactSecrets()` antes de guardarse.
+- La **empresa nunca viene del webhook**: se deduce de la factura con `(provider, provider_document_id)` (índice único) dentro de `process_webhook_event`.
+- Idempotencia por `(provider, event_id)` en `webhook_events`: una entrega repetida (o concurrente) no se vuelve a aplicar. Un estado final (`authorized`, `rejected`, `failed`, `voided`) no se sobrescribe, así que los avisos desordenados o reenviados no pueden revertirlo.
+- Documento desconocido → `404` y el evento queda `failed`: si el aviso llegó antes de guardar el id del documento, el reintento del proveedor lo aplica.
+- Limitaciones: sin protección anti-replay por marca de tiempo (pendiente de lo que documente Factuplan) ni límite de peticiones por IP (Fase 4); `voided` (anulación) todavía no se aplica desde un webhook.
 
 ## Cabeceras HTTP
 Configuradas en `next.config.ts`: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS. **Pendiente:** Content-Security-Policy con nonces (ver guía de CSP de Next.js) antes de producción.

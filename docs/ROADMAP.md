@@ -15,9 +15,11 @@ Repo, Next.js + TS + Tailwind, estructura, Supabase preparado (migraciones + RLS
 - [ ] Alta de empresas, establecimientos, puntos de emisión, usuarios y configuración de proveedor desde el panel (hoy: SQL/service role, ver `docs/DATABASE.md`).
 - [ ] `GET /api/v1/invoices/:id/ride|xml` (depende del detalle del proveedor; Fase 2).
 
-## Fase 2 — Webhooks y ciclo de vida
-- `POST /api/webhooks/factuplan`, `webhook_events`, reconciliación vía `getInvoice`.
-- Detalle de factura (eventos, RIDE, XML) y configuración de empresa.
+## Fase 2 — Webhooks y ciclo de vida (en curso)
+- [x] `POST /api/webhooks/[provider]` (mock operativo; Factuplan responde 501 hasta la Fase 3): firma sobre cuerpo crudo, validación Zod, payload sanitizado, procesamiento idempotente por `(provider, event_id)` en una sola transacción (`process_webhook_event`), estados finales no se pisan, `not_found` → 404 para que el proveedor reintente.
+- [ ] Reconciliación vía `getInvoice` (facturas que llevan demasiado tiempo en `processing`).
+- [ ] Detalle de factura (eventos, RIDE, XML) y configuración de empresa.
+- [ ] Concretar con Factuplan: esquema de webhook, enum de estados y anti-replay (ver `docs/FACTUPLAN.md`).
 
 ## Fase 3 — Factuplan real (sandbox)
 - Completar `docs/FACTUPLAN.md` con la documentación oficial.

@@ -3,6 +3,7 @@ import { redactSecrets } from "@/lib/security/sanitize";
 /** Códigos estables de la API pública (ver docs/INTEGRATION.md). */
 export type ApiErrorCode =
   | "invalid_json"
+  | "invalid_webhook"
   | "payload_too_large"
   | "unauthorized"
   | "forbidden"

@@ -44,7 +44,7 @@ Solo `providers/` conoce proveedores concretos. Cambiar de proveedor = nueva cla
 3. Idempotencia: misma clave + mismo cuerpo ⇒ devolver la respuesta original; mismo clave + otro cuerpo ⇒ 422.
 4. `create_invoice_draft` (una transacción): reclama la clave, resuelve establecimiento/punto de la empresa, upsert del cliente, secuencial atómico, factura `pending` + ítems + evento `invoice.created`. Si algo falla, todo se revierte.
 5. `provider.createInvoice()` → `processing`. Si el proveedor falla, la factura queda `pending` (502) y **reintentar con la misma `Idempotency-Key` la reanuda**; al proveedor se le propaga el id de la factura como clave de idempotencia.
-6. Webhook del proveedor (firma verificada, idempotente por `event_id`) → `authorized` / `rejected`.
+6. Webhook del proveedor → `POST /api/webhooks/[provider]` (firma verificada sobre el cuerpo crudo, validado, idempotente por `(provider, event_id)`) → `authorized` / `rejected`. Todo ocurre en `process_webhook_event` (una transacción); la factura se localiza por `(provider, provider_document_id)`. (Implementado en la Fase 2 contra `mock`.)
 7. Cada paso escribe en `billing_events` (append-only, sanitizado).
 
 ## Decisiones clave

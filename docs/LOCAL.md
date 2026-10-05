@@ -108,6 +108,17 @@ En el panel, **Facturas** debe mostrar la factura (estado "En proceso").
 Supabase Studio: http://127.0.0.1:54323 → Table Editor → `invoices`, `invoice_items`, `billing_events`, `idempotency_keys`.
 Comprueba que `api_keys` guarda solo `key_hash` (nunca la clave completa).
 
+## 10. Probar los webhooks (Fase 2)
+Los webhooks los envía el proveedor cuando el SRI responde. Con el proveedor `mock` los simulamos nosotros, firmándolos como lo haría el proveedor.
+
+1. Asegúrate de que `.env.local` tiene `MOCK_WEBHOOK_SECRET=dev-only-mock-secret` (viene de `.env.example`). Si lo cambias, reinicia `npm run dev`.
+2. **Base de datos:** la migración `…000006_webhook_processing.sql` debe estar aplicada. En un proyecto nuevo, `all-migrations.sql` ya la incluye. En uno que ya tenías, pega **solo** `supabase/migrations/20261005000006_webhook_processing.sql` en el SQL Editor.
+3. Con una API key de pruebas:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\probar-webhook.ps1 -Key nb_test_TU_CLAVE
+```
+Crea una factura, intenta autorizarla con avisos falsos (deben rechazarse con 401), la autoriza con un aviso firmado y comprueba que repetir el aviso no hace nada.
+
 ## Si algo falla
 - **401 con una clave recién creada** o **500 `internal_error`**: copia las líneas `[api] …` de la terminal donde corre `npm run dev` (no incluyen secretos) y compártelas.
 - **El login no funciona**: ejecuta `npx supabase db reset` otra vez y revisa que `.env.local` tenga las 3 variables.

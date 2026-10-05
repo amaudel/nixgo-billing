@@ -25,8 +25,8 @@ export function validationError(error: ZodError): ApiError {
   );
 }
 
-/** Lee y parsea el cuerpo JSON con un límite de tamaño (también sin Content-Length confiable). */
-export async function readJsonBody(request: Request): Promise<unknown> {
+/** Cuerpo CRUDO (necesario para verificar firmas de webhooks) con límite de tamaño. */
+export async function readRawBody(request: Request): Promise<string> {
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (declared > MAX_BODY_BYTES) throw new ApiError(413, "payload_too_large", "Cuerpo demasiado grande");
 
@@ -34,6 +34,12 @@ export async function readJsonBody(request: Request): Promise<unknown> {
   if (Buffer.byteLength(text) > MAX_BODY_BYTES) {
     throw new ApiError(413, "payload_too_large", "Cuerpo demasiado grande");
   }
+  return text;
+}
+
+/** Lee y parsea el cuerpo JSON con un límite de tamaño (también sin Content-Length confiable). */
+export async function readJsonBody(request: Request): Promise<unknown> {
+  const text = await readRawBody(request);
   try {
     return JSON.parse(text);
   } catch {

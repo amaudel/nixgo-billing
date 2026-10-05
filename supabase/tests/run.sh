@@ -21,3 +21,8 @@ $S -f seed.sql   # idempotente: una segunda ejecución no falla ni duplica
 test "$($S -Atc "select count(*) from public.organizations o join public.organization_users u on u.organization_id = o.id join public.emission_points e on e.organization_id = o.id")" = "1"
 test "$($S -Atc "select count(*) from auth.identities")" = "1"
 test "$($S -Atc "select count(*) from public.organization_provider_configs")" = "2"
+
+# all-migrations.sql debe estar al día con supabase/migrations/ (si falla: ./scripts/build-all-migrations.sh).
+cp all-migrations.sql /tmp/all-migrations.committed.sql
+../scripts/build-all-migrations.sh
+diff -q all-migrations.sql /tmp/all-migrations.committed.sql >/dev/null || { echo "all-migrations.sql desactualizado"; exit 1; }

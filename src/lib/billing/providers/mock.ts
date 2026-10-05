@@ -21,16 +21,13 @@ export class MockBillingProvider implements BillingProvider {
 
   async createInvoice(request: ProviderInvoiceRequest): Promise<ProviderInvoiceResult> {
     const key = request.context.idempotencyKey;
-    if (key) {
-      const existing = this.documents.get(`idem:${key}`);
-      if (existing) return existing;
-    }
+    // Con clave de idempotencia el id es determinista (sirve entre instancias serverless y
+    // permite simular webhooks sin consultar la base): mock_<clave>.
     const result: ProviderInvoiceResult = {
-      providerDocumentId: `mock_${randomUUID()}`,
+      providerDocumentId: key ? `mock_${key}` : `mock_${randomUUID()}`,
       status: "processing",
     };
     this.documents.set(result.providerDocumentId, result);
-    if (key) this.documents.set(`idem:${key}`, result);
     return result;
   }
 
@@ -70,12 +67,22 @@ export class MockBillingProvider implements BillingProvider {
       type: string;
       documentId?: string;
       status?: VerifiedWebhook["status"];
+      accessKey?: string;
+      authorizationNumber?: string;
+      authorizedAt?: string;
+      rejectionReason?: string;
     };
     return {
       eventId: payload.id,
       eventType: payload.type,
       providerDocumentId: payload.documentId,
       status: payload.status,
+      result: {
+        accessKey: payload.accessKey,
+        authorizationNumber: payload.authorizationNumber,
+        authorizedAt: payload.authorizedAt,
+        rejectionReason: payload.rejectionReason,
+      },
       payload,
     };
   }

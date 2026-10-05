@@ -149,6 +149,6 @@ Posible nueva variable al implementar: `FACTUPLAN_BASE_URL` (por defecto `https:
 | `getInvoice` | `GET /receipts/{id}` y `/status`; reconciliación si se pierde un webhook |
 | `createCreditNote` | `POST /v1/developer/credit-notes` (por `invoiceAccessKey`) |
 | `getRide` / `getXml` | `GET /receipts/{id}/pdf` y `/xml`; descargar la URL firmada (5 min) y servirla desde Nixgo |
-| `verifyWebhook` | HMAC-SHA256 del cuerpo crudo con `FACTUPLAN_WEBHOOK_SECRET`; rechazar si falta secreto o firma |
+| `verifyWebhook` | HMAC-SHA256 del cuerpo crudo con `FACTUPLAN_WEBHOOK_SECRET`; rechazar si falta secreto o firma. Debe devolver `VerifiedWebhook` (`eventId`, `eventType`, `providerDocumentId` = `data.id`/id del receipt, `status` mapeado a `InvoiceStatus`, `result` con `accessKey`/`authorizationNumber`/`authorizedAt`/`rejectionReason` desde `data.sriError`). El receptor genérico (`src/lib/webhooks/service.ts`) ya valida y procesa idempotentemente; faltan el esquema y el `event_id` reales (pendientes 5–7 de la lista). |
 
 Hasta que los puntos 1 y 2 estén resueltos, el desarrollo usa `MockBillingProvider` (`BILLING_PROVIDER=mock`).
