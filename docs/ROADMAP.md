@@ -3,7 +3,7 @@
 ## Fase 0 — Fundación ✅
 Repo, Next.js + TS + Tailwind, estructura, Supabase preparado (migraciones + RLS), auth, dashboard/empresas/facturas (solo lectura), `BillingProvider`, `MockBillingProvider`, stub `FactuplanProvider`, documentación.
 
-**Pendiente de verificar en Fase 0:** ejecutar migraciones en Supabase local (Docker) y probar RLS con usuarios de dos empresas.
+**Verificado:** migraciones y RLS con dos empresas se prueban en un Postgres plano con `supabase/tests/run.sh` (bootstrap que emula roles y `auth`; también corre en CI). **Pendiente:** repetirlo contra Supabase real (`supabase start`) antes de producción.
 
 ## Fase 1 — API y multi-tenancy operativo
 - Alta de empresas, establecimientos, puntos de emisión y usuarios desde el panel.
