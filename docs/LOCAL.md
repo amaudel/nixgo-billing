@@ -2,7 +2,21 @@
 
 Guía paso a paso para correr todo **en local** (Supabase en Docker + la app). No usa tus proyectos de Supabase en la nube ni emite facturas reales: el proveedor es `mock`.
 
-## Antes de empezar
+## Alternativa sin Docker: un proyecto Supabase de pruebas en la nube
+Si no puedes o no quieres instalar Docker, usa un proyecto Supabase **nuevo, vacío y dedicado a pruebas** (nunca uno con datos reales, como el de otra app).
+
+1. `npx supabase login` (abre el navegador: entra con la cuenta que tiene el proyecto de pruebas).
+2. `npx supabase link --project-ref TU_REF` (el ref es el código de la URL del dashboard; pide la contraseña de la base que pusiste al crear el proyecto).
+3. `npx supabase db push` → aplica las 5 migraciones.
+4. Dashboard → **Authentication → Users → Add user**: crea tu usuario (correo + contraseña, marcando "Auto confirm user").
+5. Dashboard → **SQL Editor**: pega `supabase/dev-setup-hosted.sql` cambiando `TU_CORREO` por el de tu usuario → Run. Crea la empresa demo, el establecimiento y el punto de emisión.
+6. Dashboard → **Project Settings → API**: copia la URL, la clave publishable (o anon) y la secret (o service_role) a `.env.local`. **Nunca pegues la secret en un chat ni la subas a Git.**
+7. Dashboard → **Authentication → Sign In / Providers**: desactiva "Allow new users to sign up" (el panel no tiene auto-registro).
+8. Sigue desde el **paso 5** (arrancar y entrar) de esta guía, con tu correo y contraseña.
+
+Si `db push` falla por la conexión, alternativa: pegar a mano en el SQL Editor, **en orden**, cada archivo de `supabase/migrations/`.
+
+## Antes de empezar (ruta con Docker)
 - **Docker Desktop** instalado y **abierto** (que diga "running").
 - **Node.js 20.19 o superior** (`node -v`).
 - Este repositorio, en la rama `claude/loving-clarke-7dcsup`.
