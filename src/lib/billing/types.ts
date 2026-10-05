@@ -14,7 +14,9 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 export type BillingEnvironment = "test" | "production";
 export type ProviderName = "mock" | "factuplan";
 
-export type IdentificationType = "ruc" | "cedula" | "passport" | "final_consumer" | "foreign_id";
+// Lista provisional; validar contra la ficha técnica vigente del SRI antes de producción.
+export const IDENTIFICATION_TYPES = ["ruc", "cedula", "passport", "final_consumer", "foreign_id"] as const;
+export type IdentificationType = (typeof IDENTIFICATION_TYPES)[number];
 
 export interface InvoiceCustomer {
   identificationType: IdentificationType;
