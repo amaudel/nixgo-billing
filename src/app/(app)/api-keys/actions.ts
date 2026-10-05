@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireOrgAdmin } from "@/lib/auth/permissions";
 import { generateApiKey } from "@/lib/security/api-keys";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -18,26 +19,6 @@ const createSchema = z.object({
   applicationName: z.string().trim().min(1, "Indica el nombre de la aplicación").max(64),
   environment: z.enum(["test", "production"]),
 });
-
-/** El usuario debe ser administrador de la empresa (o administrador de plataforma). */
-async function requireOrgAdmin(organizationId: string) {
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
-
-  // Ambas lecturas pasan por RLS con la sesión del usuario: solo ve sus propias filas.
-  const [{ data: membership }, { data: platform }] = await Promise.all([
-    supabase
-      .from("organization_users")
-      .select("role")
-      .eq("organization_id", organizationId)
-      .eq("user_id", auth.user.id)
-      .maybeSingle(),
-    supabase.from("platform_admins").select("user_id").eq("user_id", auth.user.id).maybeSingle(),
-  ]);
-  const allowed = membership?.role === "organization_admin" || platform !== null;
-  return allowed ? { userId: auth.user.id } : null;
-}
 
 export async function createApiKey(_prev: CreateKeyState, formData: FormData): Promise<CreateKeyState> {
   const parsed = createSchema.safeParse({

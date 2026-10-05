@@ -8,6 +8,7 @@ Migraciones en `supabase/migrations/` (orden cronológico, inmutables una vez ap
 4. `…000004_emission_points_sequence_guard.sql` — privilegios por columna: el panel no puede tocar `current_sequence`.
 5. `…000005_invoice_api_functions.sql` — funciones de la API (solo `service_role`): `create_invoice_draft` (reserva atómica: idempotencia + cliente + secuencial + factura + ítems + evento; todo o nada), `invoice_detail`, `invoice_list`, `apply_provider_result` (solo transiciona facturas `pending`/`processing`). Todas reciben `organization_id` y ambiente explícitos.
 6. `…000006_webhook_processing.sql` — índice único `(provider, provider_document_id)`, `webhook_events.organization_id/invoice_id` y `process_webhook_event` (idempotente, atómica, solo service role; la empresa se deduce de la factura, nunca del cuerpo del webhook).
+7. `…000007_organization_admin_functions.sql` — `create_organization` (empresa + proveedor `mock` de pruebas, atómico), `find_user_id_by_email` y `user_emails` (SECURITY DEFINER, solo service role: único acceso a `auth.users`).
 
 > Estado de verificación: las 5 migraciones se aplican y se prueban en un Postgres 16 plano con `supabase/tests/run.sh` (emula roles y `auth` de Supabase; corre en CI): aislamiento RLS entre empresas e idempotencia/atomicidad de la API de facturas. Las migraciones también se aplicaron en un proyecto Supabase real de pruebas (vía `supabase/all-migrations.sql`) y la API funcionó contra él. **Pendiente:** probar concurrencia real sobre una misma `Idempotency-Key`.
 
@@ -52,4 +53,4 @@ insert into public.platform_admins (user_id)
 select id from auth.users where email = 'tu-correo@dominio.com';
 ```
 
-Empresas, establecimientos, puntos de emisión y vínculos `organization_users` se crean por ahora con SQL o service role; el alta desde el panel llega en la Fase 1.
+Empresas (administrador de plataforma), establecimientos, puntos de emisión y vínculos `organization_users` (administrador de cada empresa) se crean desde el panel, en `/organizations`. Las cuentas de usuario se crean en Supabase → Authentication → Users; el panel solo vincula cuentas existentes.

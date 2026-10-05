@@ -108,6 +108,9 @@ En el panel, **Facturas** debe mostrar la factura (estado "En proceso").
 Supabase Studio: http://127.0.0.1:54323 → Table Editor → `invoices`, `invoice_items`, `billing_events`, `idempotency_keys`.
 Comprueba que `api_keys` guarda solo `key_hash` (nunca la clave completa).
 
+## 9b. Crear empresas y usuarios desde el panel
+Con una cuenta de **administrador de plataforma** (ver `docs/DATABASE.md#bootstrap`) ves el botón **Nueva empresa** en *Empresas*. Dentro de cada empresa puedes crear establecimientos, puntos de emisión y agregar usuarios que **ya tengan cuenta** (se crean en Supabase → Authentication → Users). Un administrador de empresa solo ve y administra la suya. En un proyecto que ya tenías, aplica antes `supabase/migrations/20261005000007_organization_admin_functions.sql` en el SQL Editor.
+
 ## 10. Probar los webhooks (Fase 2)
 Los webhooks los envía el proveedor cuando el SRI responde. Con el proveedor `mock` los simulamos nosotros, firmándolos como lo haría el proveedor.
 

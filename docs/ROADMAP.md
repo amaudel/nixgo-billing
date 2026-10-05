@@ -12,7 +12,8 @@ Repo, Next.js + TS + Tailwind, estructura, Supabase preparado (migraciones + RLS
 - [x] Tests: aislamiento RLS, atomicidad/idempotencia en SQL, servicio con repositorio en memoria.
 - [x] Capa HTTP→PostgREST verificada contra un proyecto Supabase real de pruebas (2026-10-05): `scripts/probar-api.ps1`, 17/17 (auth, creación 202, idempotencia 200/422, validación, consulta, aislamiento 404).
 - [ ] Probar concurrencia real sobre la misma `Idempotency-Key` y verificar `supabase/seed.sql` con el login local (Docker).
-- [ ] Alta de empresas, establecimientos, puntos de emisión, usuarios y configuración de proveedor desde el panel (hoy: SQL/service role, ver `docs/DATABASE.md`).
+- [x] Panel: alta de empresas (solo admin de plataforma), establecimientos, puntos de emisión y usuarios existentes (admin de la empresa) en `/organizations`.
+- [ ] Panel: crear cuentas de usuario/invitaciones (hoy: Supabase → Authentication → Users), cambiar rol/quitar usuarios (requiere proteger al último administrador), editar/desactivar empresas y configurar el proveedor (Fase 2).
 - [ ] `GET /api/v1/invoices/:id/ride|xml` (depende del detalle del proveedor; Fase 2).
 
 ## Fase 2 — Webhooks y ciclo de vida (en curso)
