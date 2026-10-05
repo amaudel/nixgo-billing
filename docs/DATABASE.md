@@ -8,7 +8,7 @@ Migraciones en `supabase/migrations/` (orden cronológico, inmutables una vez ap
 4. `…000004_emission_points_sequence_guard.sql` — privilegios por columna: el panel no puede tocar `current_sequence`.
 5. `…000005_invoice_api_functions.sql` — funciones de la API (solo `service_role`): `create_invoice_draft` (reserva atómica: idempotencia + cliente + secuencial + factura + ítems + evento; todo o nada), `invoice_detail`, `invoice_list`, `apply_provider_result` (solo transiciona facturas `pending`/`processing`). Todas reciben `organization_id` y ambiente explícitos.
 
-> Estado de verificación: las 5 migraciones se aplican y se prueban en un Postgres 16 plano con `supabase/tests/run.sh` (emula roles y `auth` de Supabase; corre en CI): aislamiento RLS entre empresas e idempotencia/atomicidad de la API de facturas. **Pendiente:** repetirlo contra Supabase real (`supabase start`) y probar concurrencia real sobre una misma `Idempotency-Key`.
+> Estado de verificación: las 5 migraciones se aplican y se prueban en un Postgres 16 plano con `supabase/tests/run.sh` (emula roles y `auth` de Supabase; corre en CI): aislamiento RLS entre empresas e idempotencia/atomicidad de la API de facturas. Las migraciones también se aplicaron en un proyecto Supabase real de pruebas (vía `supabase/all-migrations.sql`) y la API funcionó contra él. **Pendiente:** probar concurrencia real sobre una misma `Idempotency-Key`.
 
 ## Entidades
 

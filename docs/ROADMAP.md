@@ -10,7 +10,8 @@ Repo, Next.js + TS + Tailwind, estructura, Supabase preparado (migraciones + RLS
 - [x] Auth por key, resolución de tenant, rate limiting (en memoria), errores uniformes.
 - [x] `POST /api/v1/invoices`, `GET /api/v1/invoices`, `GET /api/v1/invoices/:id` con idempotencia, contra `MockBillingProvider`.
 - [x] Tests: aislamiento RLS, atomicidad/idempotencia en SQL, servicio con repositorio en memoria.
-- [ ] Verificar la capa HTTP→PostgREST contra Supabase real (`supabase start`) y probar concurrencia sobre la misma `Idempotency-Key`.
+- [x] Capa HTTP→PostgREST verificada contra un proyecto Supabase real de pruebas (2026-10-05): `scripts/probar-api.ps1`, 17/17 (auth, creación 202, idempotencia 200/422, validación, consulta, aislamiento 404).
+- [ ] Probar concurrencia real sobre la misma `Idempotency-Key` y verificar `supabase/seed.sql` con el login local (Docker).
 - [ ] Alta de empresas, establecimientos, puntos de emisión, usuarios y configuración de proveedor desde el panel (hoy: SQL/service role, ver `docs/DATABASE.md`).
 - [ ] `GET /api/v1/invoices/:id/ride|xml` (depende del detalle del proveedor; Fase 2).
 
