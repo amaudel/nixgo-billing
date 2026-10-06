@@ -12,6 +12,7 @@ $P -f tests/invoice_api.sql >/dev/null
 $P -f tests/webhooks.sql >/dev/null
 $P -f tests/organization_admin.sql >/dev/null
 $P -f tests/reconciliation.sql >/dev/null
+$P -f tests/provider_config.sql >/dev/null
 
 # El seed de desarrollo debe aplicarse limpio sobre las migraciones (base aparte: usa un RUC propio).
 $PSQL -q -c "drop database if exists nixgo_seed_test" -c "create database nixgo_seed_test"
