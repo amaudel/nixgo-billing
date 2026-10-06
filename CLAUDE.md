@@ -10,6 +10,7 @@ Servicio de facturación electrónica multiempresa para Ecuador. Lee `docs/ARCHI
 - Las apps consumidoras nunca llaman a Factuplan; se autentican con API keys de Nixgo (`nb_test_…` / `nb_live_…`).
 - Lógica específica de Ecuador/SRI vive en `src/lib/tax/ecuador/`, separada del dominio general. No asumir reglas fiscales: se implementan solo con la especificación vigente.
 - No inventar endpoints de Factuplan: primero documentarlos en `docs/FACTUPLAN.md` desde la documentación oficial.
+- **API pública `/api/v1`:** handlers finos en `src/app/api/v1/*` → `lib/api` (auth por key, errores `{error:{code,message}}`, límite) → `lib/invoices` (servicio con `InvoiceRepository` inyectable). La organización y el ambiente salen solo de la API key. La escritura de facturas pasa por funciones SQL atómicas (`create_invoice_draft`, …) ejecutables solo por service role; probarlas con `supabase/tests/run.sh`.
 
 ## Seguridad (innegociable)
 - **RLS obligatorio** en toda tabla nueva, con privilegios mínimos (`revoke` a anon/authenticated y `grant` explícito). Denegar por defecto.

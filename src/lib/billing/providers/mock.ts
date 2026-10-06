@@ -1,4 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { buildMockPdf, buildMockXml } from "./mock-documents";
 import {
   WebhookSignatureError,
   type BillingProvider,
@@ -21,23 +22,28 @@ export class MockBillingProvider implements BillingProvider {
 
   async createInvoice(request: ProviderInvoiceRequest): Promise<ProviderInvoiceResult> {
     const key = request.context.idempotencyKey;
-    if (key) {
-      const existing = this.documents.get(`idem:${key}`);
-      if (existing) return existing;
-    }
+    // Con clave de idempotencia el id es determinista (sirve entre instancias serverless y
+    // permite simular webhooks sin consultar la base): mock_<clave>.
     const result: ProviderInvoiceResult = {
-      providerDocumentId: `mock_${randomUUID()}`,
+      providerDocumentId: key ? `mock_${key}` : `mock_${randomUUID()}`,
       status: "processing",
     };
     this.documents.set(result.providerDocumentId, result);
-    if (key) this.documents.set(`idem:${key}`, result);
     return result;
   }
 
+  /**
+   * Sin estado (las instancias serverless no comparten memoria): el SRI simulado AUTORIZA todo
+   * documento mock que se le consulte. Sirve para ver el ciclo completo en desarrollo.
+   */
   async getInvoice(_context: ProviderContext, id: string): Promise<ProviderInvoiceResult> {
-    const doc = this.documents.get(id);
-    if (!doc) throw new Error(`Documento mock no encontrado: ${id}`);
-    return doc;
+    return {
+      providerDocumentId: id,
+      status: "authorized",
+      accessKey: `MOCK-AK-${id}`,
+      authorizationNumber: `MOCK-AUTH-${id}`,
+      authorizedAt: new Date().toISOString(),
+    };
   }
 
   async createCreditNote(): Promise<ProviderInvoiceResult> {
@@ -50,11 +56,15 @@ export class MockBillingProvider implements BillingProvider {
   }
 
   async getRide(_context: ProviderContext, id: string): Promise<ProviderFile> {
-    return { contentType: "text/plain", body: `MOCK RIDE ${id}`, filename: `${id}.txt` };
+    return {
+      contentType: "application/pdf",
+      body: buildMockPdf(["RIDE SIMULADO (proveedor mock)", `Documento: ${id}`, "Sin valor tributario"]),
+      filename: `${id}.pdf`,
+    };
   }
 
   async getXml(_context: ProviderContext, id: string): Promise<ProviderFile> {
-    return { contentType: "application/xml", body: `<mock id="${id}"/>`, filename: `${id}.xml` };
+    return { contentType: "application/xml", body: buildMockXml(id), filename: `${id}.xml` };
   }
 
   async verifyWebhook(rawBody: string, headers: Headers): Promise<VerifiedWebhook> {
@@ -70,12 +80,22 @@ export class MockBillingProvider implements BillingProvider {
       type: string;
       documentId?: string;
       status?: VerifiedWebhook["status"];
+      accessKey?: string;
+      authorizationNumber?: string;
+      authorizedAt?: string;
+      rejectionReason?: string;
     };
     return {
       eventId: payload.id,
       eventType: payload.type,
       providerDocumentId: payload.documentId,
       status: payload.status,
+      result: {
+        accessKey: payload.accessKey,
+        authorizationNumber: payload.authorizationNumber,
+        authorizedAt: payload.authorizedAt,
+        rejectionReason: payload.rejectionReason,
+      },
       payload,
     };
   }

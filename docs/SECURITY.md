@@ -18,13 +18,30 @@ RLS en todas las tablas + FK compuestas `(id, organization_id)` + filtrado expl�
 - Todo payload/response pasa por `redactSecrets()` (`src/lib/security/sanitize.ts`) antes de persistirse o loguearse. Nunca se registran API keys completas, contraseñas ni material de certificados.
 
 ## Webhooks
-Verificar la firma sobre el cuerpo crudo con comparación en tiempo constante, rechazar si no hay secreto configurado, y deduplicar por `(provider, event_id)`. Guardar el historial en `webhook_events`.
+Implementado en `POST /api/webhooks/[provider]` (`src/lib/webhooks/`):
+- Sin API keys ni cookies: la autenticidad es la **firma** del proveedor sobre el cuerpo **crudo** (comparación en tiempo constante); sin secreto configurado se rechaza todo. Factuplan responde `501` hasta implementarse.
+- Tras verificar, el contenido se valida igualmente con Zod (id de evento, tipo, estado dentro del dominio, fechas) y el payload pasa por `redactSecrets()` antes de guardarse.
+- La **empresa nunca viene del webhook**: se deduce de la factura con `(provider, provider_document_id)` (índice único) dentro de `process_webhook_event`.
+- Idempotencia por `(provider, event_id)` en `webhook_events`: una entrega repetida (o concurrente) no se vuelve a aplicar. Un estado final (`authorized`, `rejected`, `failed`, `voided`) no se sobrescribe, así que los avisos desordenados o reenviados no pueden revertirlo.
+- Documento desconocido → `404` y el evento queda `failed`: si el aviso llegó antes de guardar el id del documento, el reintento del proveedor lo aplica.
+- Limitaciones: sin protección anti-replay por marca de tiempo (pendiente de lo que documente Factuplan) ni límite de peticiones por IP (Fase 4); `voided` (anulación) todavía no se aplica desde un webhook.
 
 ## Cabeceras HTTP
 Configuradas en `next.config.ts`: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS. **Pendiente:** Content-Security-Policy con nonces (ver guía de CSP de Next.js) antes de producción.
 
 ## Rate limiting
-Preparado, no implementado. Plan: límite por API key y por IP en `/api/v1/*` y `/api/webhooks/*` (p. ej. Upstash/Vercel KV) en la Fase 1.
+`/api/v1/*`: 120 peticiones/min por API key (`src/lib/api/rate-limit.ts`, ventana fija **en memoria**). Limitación conocida: en serverless cada instancia cuenta por separado, así que es protección de mejor esfuerzo. **Pendiente (Fase 4):** almacén compartido (Upstash/Vercel KV), límite por IP para intentos con claves inválidas y límite en `/api/webhooks/*`.
+
+## API pública (`/api/v1`)
+- Autenticación en `src/lib/api/auth.ts`: hash SHA-256 → fila de `api_keys` + organización; exige clave `active`, ambiente coherente con el prefijo (`nb_test_`↔`test`, `nb_live_`↔`production`), empresa `active` y *scope* (`invoices:read` / `invoices:write`). Todo fallo de identidad responde el mismo `401` genérico.
+- La empresa y el ambiente salen **solo** de la key; el cuerpo no puede indicarlos (validación estricta: campos desconocidos → 422).
+- Cuerpo máximo 256 KB; errores inesperados → `500` genérico (el detalle se registra sanitizado, sin cuerpo ni cabeceras).
+- Producción exige proveedor configurado explícitamente en `organization_provider_configs`; sin él, `409`. Las pruebas usan `mock`.
+- Configuración del proveedor (`set_provider_config`): solo administradores de plataforma; solo **referencias** (el formulario rechaza espacios y caracteres típicos de contraseñas/rutas de archivo, pero la regla de fondo es no pegar secretos aquí). Producción exige proveedor real y una casilla de confirmación, y la base de datos rechaza `production` + `mock` aunque se salte la validación del formulario. Cada cambio se audita sin guardar los valores. El administrador de una empresa puede ver su configuración pero no cambiarla (sin privilegio de escritura sobre `organization_provider_configs`).
+- Descargas de RIDE/XML (`GET /api/v1/invoices/:id/ride|xml` y la ruta del panel): solo facturas autorizadas; Nixgo trae el archivo del proveedor y lo sirve (las apps nunca ven URLs ni credenciales). El **tipo de contenido y el nombre del archivo los fija Nixgo** (`application/pdf`/`application/xml`, nombre derivado del número de factura sanitizado), nunca el proveedor, y se envía `attachment` + `nosniff` + `no-store`. La ruta del panel lee la factura con la sesión del usuario (RLS) antes de llamar al proveedor.
+- Reconciliación (`/api/cron/reconcile`): trabajo de sistema protegido con `CRON_SECRET` (mínimo 16 caracteres; sin él el endpoint responde 503 y queda cerrado), comparado en tiempo constante. Es independiente de las API keys: el secreto del cron no sirve en `/api/v1` ni viceversa. Aplica resultados con `apply_provider_result` (no pisa estados finales), por lo que es seguro junto a los webhooks. Los parámetros están acotados (`limit` ≤ 100).
+- Administración desde el panel (`/organizations`): el alta de empresas exige administrador de plataforma y se escribe con service role (`create_organization`, atómico; nace solo con proveedor `mock` de pruebas). Establecimientos, puntos de emisión y miembros se escriben con la **sesión del usuario**: las políticas RLS deciden, y la comprobación previa en el servidor (`src/lib/auth/permissions.ts`) es solo fail-fast. El administrador de una empresa no puede fijar `current_sequence` (privilegios por columna). Agregar un miembro busca la cuenta por correo con `find_user_id_by_email` (solo service role) y el mensaje de error no distingue "no existe" de otros fallos. Limitación: no hay aún cambio de rol/baja de usuarios ni protección del último administrador.
+- Gestión de claves en el panel (`/api-keys`): crear/revocar solo `organization_admin` o admin de plataforma; la clave completa se muestra una vez y solo se persiste el hash.
 
 ## Certificados de firma electrónica (CRÍTICO)
 

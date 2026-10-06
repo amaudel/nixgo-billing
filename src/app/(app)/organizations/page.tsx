@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { EmptyState, PageHeader, Table, td, th } from "@/components/ui";
+import { isPlatformAdmin } from "@/lib/auth/permissions";
 import { getOrganizationOverview } from "@/lib/data/dashboard";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,12 +10,23 @@ const ENV_LABEL = { test: "Pruebas", production: "Producción" } as const;
 export default async function OrganizationsPage() {
   const supabase = await createClient();
   const orgs = await getOrganizationOverview(supabase);
+  const { data: auth } = await supabase.auth.getUser();
+  const canCreate = auth.user ? await isPlatformAdmin(supabase, auth.user.id) : false;
 
   return (
     <>
       <PageHeader title="Empresas" subtitle="Organizaciones que emiten facturas a través de Nixgo Billing" />
+      {canCreate && (
+        <p className="mb-4">
+          <Link href="/organizations/new" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+            Nueva empresa
+          </Link>
+        </p>
+      )}
       {orgs.length === 0 ? (
-        <EmptyState>Aún no hay empresas. Se crean desde el backend de plataforma (ver docs/DATABASE.md).</EmptyState>
+        <EmptyState>
+          {canCreate ? "Aún no hay empresas. Crea la primera con «Nueva empresa»." : "No perteneces a ninguna empresa todavía."}
+        </EmptyState>
       ) : (
         <Table>
           <thead className="bg-slate-50">
@@ -30,7 +43,9 @@ export default async function OrganizationsPage() {
             {orgs.map((o) => (
               <tr key={o.id}>
                 <td className={td}>
-                  <p className="font-medium">{o.trade_name ?? o.legal_name}</p>
+                  <Link href={`/organizations/${o.id}`} className="font-medium text-indigo-700 hover:underline">
+                    {o.trade_name ?? o.legal_name}
+                  </Link>
                   {o.trade_name && <p className="text-xs text-slate-500">{o.legal_name}</p>}
                 </td>
                 <td className={`${td} font-mono`}>{o.ruc}</td>

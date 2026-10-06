@@ -7,6 +7,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/organizations", label: "Empresas" },
   { href: "/invoices", label: "Facturas" },
+  { href: "/api-keys", label: "API keys" },
 ];
 
 export function Sidebar({ email, signOut }: { email: string; signOut: () => Promise<void> }) {
