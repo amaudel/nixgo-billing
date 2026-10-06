@@ -139,6 +139,9 @@ powershell -ExecutionPolicy Bypass -File scripts\probar-documentos.ps1 -Key nb_t
 ```
 Crea una factura, comprueba que sin autorizar no hay comprobante (409), la autoriza con un webhook firmado y descarga el PDF y el XML simulados (el PDF queda en tu carpeta temporal; abre `ride-prueba.pdf`). En el panel, entra a **Facturas** y haz clic en el número de una factura: verás sus datos, ítems, totales, historial y los botones de descarga cuando esté autorizada.
 
+## 13. Configuración de la empresa (Fase 2)
+Aplica antes `supabase/migrations/20261005000009_provider_config.sql` (pega el **contenido** en el SQL Editor). En **Empresas → (empresa)** verás la sección **Proveedor de facturación**. Con tu usuario de administrador de plataforma puedes cambiarla; un administrador de empresa solo la ve. Prueba: guardar Pruebas + mock (OK); intentar Producción + mock (rechazado); Producción + Factuplan sin marcar la casilla (rechazado). Producción + Factuplan con la casilla queda guardado, pero emitir seguirá dando 501 hasta implementar Factuplan (Fase 3).
+
 ## Si algo falla
 - **401 con una clave recién creada** o **500 `internal_error`**: copia las líneas `[api] …` de la terminal donde corre `npm run dev` (no incluyen secretos) y compártelas.
 - **El login no funciona**: ejecuta `npx supabase db reset` otra vez y revisa que `.env.local` tenga las 3 variables.

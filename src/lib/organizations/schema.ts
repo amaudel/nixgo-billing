@@ -38,3 +38,40 @@ export const addMemberSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email("Correo inválido")).pipe(z.string().max(254)),
   role: z.enum(ORG_ROLES),
 });
+
+const optionalRef = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9._:/-]{1,200}$/, "Solo letras, números y . _ : / - (una referencia, nunca una contraseña ni un archivo)")
+    .optional(),
+);
+
+/**
+ * Configuración del proveedor por empresa y ambiente. Solo REFERENCIAS. Producción exige un
+ * proveedor real y una confirmación explícita: emite facturas con validez tributaria.
+ */
+export const providerConfigSchema = z
+  .object({
+    organizationId: z.uuid("Empresa inválida"),
+    environment: z.enum(["test", "production"]),
+    provider: z.enum(["mock", "factuplan"]),
+    providerCompanyRef: optionalRef,
+    certificateRef: optionalRef,
+    certificateExpiresAt: z.preprocess((v) => (v === "" ? undefined : v), z.iso.date("Fecha inválida").optional()),
+    confirmProduction: z.preprocess((v) => v === "on", z.boolean()),
+  })
+  .superRefine((value, ctx) => {
+    if (value.environment !== "production") return;
+    if (value.provider === "mock") {
+      ctx.addIssue({ code: "custom", path: ["provider"], message: "Producción no puede usar el proveedor simulado (mock)." });
+    }
+    if (!value.confirmProduction) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmProduction"],
+        message: "Marca la confirmación: producción emite facturas con validez tributaria.",
+      });
+    }
+  });

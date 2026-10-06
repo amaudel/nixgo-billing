@@ -4,6 +4,7 @@ import {
   createOrganizationSchema,
   emissionPointSchema,
   establishmentSchema,
+  providerConfigSchema,
 } from "../src/lib/organizations/schema";
 
 const uuid = "11111111-1111-4111-8111-111111111111";
@@ -55,5 +56,39 @@ describe("addMemberSchema", () => {
     expect(addMemberSchema.safeParse({ organizationId: uuid, email: "no-es-correo", role: "viewer" }).success).toBe(false);
     expect(addMemberSchema.safeParse({ organizationId: uuid, email: "a@b.co", role: "platform_admin" }).success).toBe(false);
     expect(addMemberSchema.safeParse({ organizationId: uuid, email: "a@b.co", role: "" }).success).toBe(false);
+  });
+});
+
+describe("providerConfigSchema", () => {
+  const base = { organizationId: uuid, environment: "test", provider: "mock", providerCompanyRef: "", certificateRef: "", certificateExpiresAt: "", confirmProduction: undefined };
+
+  it("pruebas con mock: válido y los vacíos quedan ausentes", () => {
+    const r = providerConfigSchema.parse(base);
+    expect(r.providerCompanyRef).toBeUndefined();
+    expect(r.certificateExpiresAt).toBeUndefined();
+    expect(r.confirmProduction).toBe(false);
+  });
+  it("producción NO acepta mock aunque se confirme", () => {
+    const r = providerConfigSchema.safeParse({ ...base, environment: "production", provider: "mock", confirmProduction: "on" });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0].message).toMatch(/simulado/);
+  });
+  it("producción exige confirmación explícita", () => {
+    const r = providerConfigSchema.safeParse({ ...base, environment: "production", provider: "factuplan" });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0].message).toMatch(/confirmación/);
+    expect(providerConfigSchema.safeParse({ ...base, environment: "production", provider: "factuplan", confirmProduction: "on" }).success).toBe(true);
+  });
+  it("las referencias no admiten espacios ni caracteres de contraseñas/archivos", () => {
+    for (const bad of ["mi clave secreta", "pass=word", "C:\\cert.p12", "a".repeat(201), "x;y", "<script>"]) {
+      expect(providerConfigSchema.safeParse({ ...base, certificateRef: bad }).success).toBe(false);
+    }
+    expect(providerConfigSchema.safeParse({ ...base, providerCompanyRef: "0999999999001", certificateRef: "cert/ref_1:abc-2.x" }).success).toBe(true);
+  });
+  it("valida la fecha y el proveedor", () => {
+    expect(providerConfigSchema.safeParse({ ...base, certificateExpiresAt: "01/06/2027" }).success).toBe(false);
+    expect(providerConfigSchema.safeParse({ ...base, certificateExpiresAt: "2027-06-01" }).success).toBe(true);
+    expect(providerConfigSchema.safeParse({ ...base, provider: "otro" }).success).toBe(false);
+    expect(providerConfigSchema.safeParse({ ...base, environment: "staging" }).success).toBe(false);
   });
 });

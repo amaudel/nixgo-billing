@@ -8,6 +8,7 @@ import {
   createOrganizationSchema,
   emissionPointSchema,
   establishmentSchema,
+  providerConfigSchema,
 } from "@/lib/organizations/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -130,4 +131,44 @@ export async function addMember(_prev: FormState, formData: FormData): Promise<F
 
   revalidatePath(`/organizations/${parsed.data.organizationId}`);
   return { ok: "Usuario agregado." };
+}
+
+/**
+ * Proveedor y referencias por empresa y ambiente: solo administradores de plataforma (cambia con
+ * qué proveedor y certificado se emite). La regla "producción no usa mock" la impone también la
+ * base de datos, y cada cambio queda auditado.
+ */
+export async function saveProviderConfig(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await requirePlatformAdmin();
+  if (!actor) return denied;
+
+  const parsed = providerConfigSchema.safeParse({
+    organizationId: formData.get("organizationId"),
+    environment: formData.get("environment"),
+    provider: formData.get("provider"),
+    providerCompanyRef: formData.get("providerCompanyRef"),
+    certificateRef: formData.get("certificateRef"),
+    certificateExpiresAt: formData.get("certificateExpiresAt"),
+    confirmProduction: formData.get("confirmProduction"),
+  });
+  if (!parsed.success) return { error: first(parsed.error.issues) };
+  const c = parsed.data;
+
+  const { error } = await createAdminClient().rpc("set_provider_config", {
+    p_organization_id: c.organizationId,
+    p_environment: c.environment,
+    p_provider: c.provider,
+    p_provider_company_ref: c.providerCompanyRef ?? null,
+    p_certificate_ref: c.certificateRef ?? null,
+    // Fin del día en Ecuador (UTC-5, sin horario de verano).
+    p_certificate_expires_at: c.certificateExpiresAt ? `${c.certificateExpiresAt}T23:59:59-05:00` : null,
+    p_actor: actor.userId,
+  });
+  if (error?.message === "production_requires_real_provider") {
+    return { error: "Producción no puede usar el proveedor simulado (mock)." };
+  }
+  if (error) return { error: "No se pudo guardar la configuración." };
+
+  revalidatePath(`/organizations/${c.organizationId}`);
+  return { ok: `Configuración de ${c.environment === "production" ? "producción" : "pruebas"} guardada.` };
 }
