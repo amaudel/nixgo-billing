@@ -142,6 +142,7 @@ Crea una factura, comprueba que sin autorizar no hay comprobante (409), la autor
 ## Si algo falla
 - **401 con una clave recién creada** o **500 `internal_error`**: copia las líneas `[api] …` de la terminal donde corre `npm run dev` (no incluyen secretos) y compártelas.
 - **El login no funciona**: ejecuta `npx supabase db reset` otra vez y revisa que `.env.local` tenga las 3 variables.
+- **Una ruta nueva da 404 (página de Next.js en `text/html`) aunque el código esté bien**: la caché de desarrollo quedó vieja tras un `git pull`. Detén `npm run dev` (Ctrl + C), borra la caché con `Remove-Item -Recurse -Force .next` y vuelve a arrancar.
 - **Puertos ocupados**: `npx supabase stop` y vuelve a `start`.
 - Para empezar de cero: `npx supabase db reset` (borra todo y recrea el seed).
 - Al terminar: `npx supabase stop`.
