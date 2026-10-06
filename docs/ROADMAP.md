@@ -19,7 +19,8 @@ Repo, Next.js + TS + Tailwind, estructura, Supabase preparado (migraciones + RLS
 ## Fase 2 — Webhooks y ciclo de vida (en curso)
 - [x] (verificado contra un proyecto Supabase real de pruebas el 2026-10-06 con `scripts/probar-webhook.ps1`: 15/15) `POST /api/webhooks/[provider]` (mock operativo; Factuplan responde 501 hasta la Fase 3): firma sobre cuerpo crudo, validación Zod, payload sanitizado, procesamiento idempotente por `(provider, event_id)` en una sola transacción (`process_webhook_event`), estados finales no se pisan, `not_found` → 404 para que el proveedor reintente.
 - [x] Reconciliación: `GET|POST /api/cron/reconcile` (protegido con `CRON_SECRET`) pregunta al proveedor por las facturas en `processing` con más de N minutos (10 por omisión) y aplica la respuesta con la misma función transaccional que los webhooks. **Pendiente:** programarlo (Vercel Cron o similar) al desplegar, y definir qué hacer con facturas atascadas por muchas horas.
-- [ ] Detalle de factura (eventos, RIDE, XML) y configuración de empresa.
+- [x] Detalle de factura en el panel (`/invoices/[id]`: datos, ítems, totales, autorización, historial de eventos) y descargas de RIDE/XML: `GET /api/v1/invoices/:id/ride|xml` (API key) y `/invoices/:id/ride|xml` (sesión del panel). Solo facturas **autorizadas** (409 si no). El mock entrega un PDF/XML simulados.
+- [ ] Configuración de empresa (elegir proveedor, referencias de certificado) en el panel.
 - [ ] Concretar con Factuplan: esquema de webhook, enum de estados y anti-replay (ver `docs/FACTUPLAN.md`).
 
 ## Fase 3 — Factuplan real (sandbox)

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { z } from "zod";
 import { StatusBadge, statusLabel } from "@/components/status-badge";
 import { EmptyState, PageHeader, Table, td, th } from "@/components/ui";
@@ -116,7 +117,9 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                 <td className={td}>{r.organizations?.trade_name ?? r.organizations?.legal_name}</td>
                 <td className={td}>{r.customers?.legal_name}</td>
                 <td className={`${td} font-mono`}>
-                  {formatInvoiceNumber(r.establishments?.code, r.emission_points?.code, r.sequential)}
+                  <Link href={`/invoices/${r.id}`} className="text-indigo-700 hover:underline">
+                    {formatInvoiceNumber(r.establishments?.code, r.emission_points?.code, r.sequential)}
+                  </Link>
                 </td>
                 <td className={`${td} text-right tabular-nums`}>{formatMoney(Number(r.total))}</td>
                 <td className={td}>

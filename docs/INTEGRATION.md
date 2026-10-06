@@ -70,8 +70,8 @@ Si el proveedor falla (`502 provider_error`), la factura queda `pending`: **rein
 ```
 GET /api/v1/invoices/:id        → factura completa (misma forma que arriba)
 GET /api/v1/invoices            → { data: [...], hasMore }   filtros: status, externalReference, limit (1–100, def. 20), offset
-GET /api/v1/invoices/:id/ride   → PDF   (previsto, Fase 2)
-GET /api/v1/invoices/:id/xml    → XML   (previsto, Fase 2)
+GET /api/v1/invoices/:id/ride   → PDF (adjunto)   solo facturas AUTORIZADAS; si no, 409 invoice_not_authorized
+GET /api/v1/invoices/:id/xml    → XML (adjunto)   ídem
 ```
 
 Estados: `draft`, `pending`, `processing`, `authorized`, `rejected`, `failed`, `voided`. Haz *polling* con backoff o (futuro) suscríbete a webhooks de Nixgo hacia tu app.
@@ -86,7 +86,7 @@ JSON uniforme `{ "error": { "code": "…", "message": "…", "details": [...] } 
 | 401 | `unauthorized` | key ausente, mal formada, revocada o de otro ambiente (mismo mensaje en todos los casos) |
 | 403 | `forbidden` | empresa inactiva o la key no tiene el permiso (`invoices:read` / `invoices:write`) |
 | 404 | `not_found` | no existe, o pertenece a otra empresa/ambiente |
-| 409 | `provider_not_configured` | producción sin proveedor configurado |
+| 409 | `provider_not_configured`, `invoice_not_authorized` | producción sin proveedor configurado / RIDE o XML de una factura que aún no está autorizada |
 | 413 | `payload_too_large` | cuerpo > 256 KB |
 | 422 | `validation_error`, `idempotency_key_required`, `idempotency_conflict` | datos inválidos / cabecera faltante / misma clave con otro cuerpo |
 | 429 | `rate_limited` | 120 peticiones/min por key (`Retry-After`, `X-RateLimit-*`) |

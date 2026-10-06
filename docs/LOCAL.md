@@ -133,6 +133,12 @@ powershell -ExecutionPolicy Bypass -File scripts\probar-reconciliacion.ps1 -Key 
 ```
 En producción se programará un cron que llame a `/api/cron/reconcile` con `Authorization: Bearer <CRON_SECRET>` cada pocos minutos.
 
+## 12. Probar RIDE y XML, y el detalle de factura (Fase 2)
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\probar-documentos.ps1 -Key nb_test_TU_CLAVE
+```
+Crea una factura, comprueba que sin autorizar no hay comprobante (409), la autoriza con un webhook firmado y descarga el PDF y el XML simulados (el PDF queda en tu carpeta temporal; abre `ride-prueba.pdf`). En el panel, entra a **Facturas** y haz clic en el número de una factura: verás sus datos, ítems, totales, historial y los botones de descarga cuando esté autorizada.
+
 ## Si algo falla
 - **401 con una clave recién creada** o **500 `internal_error`**: copia las líneas `[api] …` de la terminal donde corre `npm run dev` (no incluyen secretos) y compártelas.
 - **El login no funciona**: ejecuta `npx supabase db reset` otra vez y revisa que `.env.local` tenga las 3 variables.

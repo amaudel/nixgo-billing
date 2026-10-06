@@ -11,6 +11,7 @@ export type ApiErrorCode =
   | "validation_error"
   | "idempotency_key_required"
   | "idempotency_conflict"
+  | "invoice_not_authorized"
   | "rate_limited"
   | "provider_not_configured"
   | "provider_not_implemented"

@@ -3,6 +3,7 @@ import { computeTotals, TotalsError } from "@/lib/billing/totals";
 import {
   ProviderNotImplementedError,
   type BillingProvider,
+  type ProviderFile,
   type ProviderInvoiceRequest,
   type ProviderInvoiceResult,
 } from "@/lib/billing/providers/types";
@@ -230,4 +231,58 @@ export async function getInvoice(deps: InvoiceServiceDeps, tenant: Tenant, invoi
 export async function listInvoices(deps: InvoiceServiceDeps, tenant: Tenant, query: ListInvoicesQuery) {
   const rows = await deps.repo.list(tenant.organizationId, tenant.environment, query);
   return { invoices: rows.slice(0, query.limit), hasMore: rows.length > query.limit };
+}
+
+export type DocumentKind = "ride" | "xml";
+
+/**
+ * Descarga el RIDE (PDF) o el XML de una factura AUTORIZADA a través del proveedor que la emitió.
+ * Las apps nunca ven URLs ni credenciales del proveedor: Nixgo trae el archivo y lo sirve.
+ * Una factura no autorizada no tiene comprobante válido: 409.
+ */
+export async function downloadDocument(
+  deps: Pick<InvoiceServiceDeps, "getProvider"> & { repo: Pick<InvoiceRepository, "getProviderSelection"> },
+  tenant: { organizationId: string; ruc: string; environment: BillingEnvironment },
+  invoice: { status: string; provider: ProviderName | null; providerDocumentId: string | null },
+  kind: DocumentKind,
+): Promise<ProviderFile> {
+  if (invoice.status !== "authorized") {
+    throw new ApiError(409, "invoice_not_authorized", "La factura aún no está autorizada: no tiene comprobante");
+  }
+  if (!invoice.provider || !invoice.providerDocumentId) {
+    throw new ApiError(409, "invoice_not_authorized", "La factura no tiene documento en el proveedor");
+  }
+
+  const selection = await deps.repo.getProviderSelection(tenant.organizationId, tenant.environment);
+  const context = {
+    organizationId: tenant.organizationId,
+    ruc: tenant.ruc,
+    environment: tenant.environment,
+    providerCompanyRef: selection?.providerCompanyRef,
+    certificateRef: selection?.certificateRef,
+  };
+  const provider = deps.getProvider(invoice.provider);
+
+  try {
+    return kind === "ride"
+      ? await provider.getRide(context, invoice.providerDocumentId)
+      : await provider.getXml(context, invoice.providerDocumentId);
+  } catch (error) {
+    if (error instanceof ProviderNotImplementedError) {
+      throw new ApiError(501, "provider_not_implemented", "El proveedor de la empresa aún no está disponible");
+    }
+    logUnexpected(`provider.get${kind === "ride" ? "Ride" : "Xml"}`, error);
+    throw new ApiError(502, "provider_error", "El proveedor no pudo entregar el documento; reintenta");
+  }
+}
+
+export async function getInvoiceDocument(deps: InvoiceServiceDeps, tenant: Tenant, invoiceId: string, kind: DocumentKind) {
+  const invoice = await getInvoice(deps, tenant, invoiceId);
+  const file = await downloadDocument(
+    deps,
+    tenant,
+    { status: invoice.status, provider: invoice.provider, providerDocumentId: invoice.provider_document_id },
+    kind,
+  );
+  return { file, invoice };
 }

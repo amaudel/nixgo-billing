@@ -1,4 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { buildMockPdf, buildMockXml } from "./mock-documents";
 import {
   WebhookSignatureError,
   type BillingProvider,
@@ -55,11 +56,15 @@ export class MockBillingProvider implements BillingProvider {
   }
 
   async getRide(_context: ProviderContext, id: string): Promise<ProviderFile> {
-    return { contentType: "text/plain", body: `MOCK RIDE ${id}`, filename: `${id}.txt` };
+    return {
+      contentType: "application/pdf",
+      body: buildMockPdf(["RIDE SIMULADO (proveedor mock)", `Documento: ${id}`, "Sin valor tributario"]),
+      filename: `${id}.pdf`,
+    };
   }
 
   async getXml(_context: ProviderContext, id: string): Promise<ProviderFile> {
-    return { contentType: "application/xml", body: `<mock id="${id}"/>`, filename: `${id}.xml` };
+    return { contentType: "application/xml", body: buildMockXml(id), filename: `${id}.xml` };
   }
 
   async verifyWebhook(rawBody: string, headers: Headers): Promise<VerifiedWebhook> {
