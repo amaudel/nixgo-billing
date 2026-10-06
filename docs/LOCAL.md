@@ -122,6 +122,17 @@ powershell -ExecutionPolicy Bypass -File scripts\probar-webhook.ps1 -Key nb_test
 ```
 Crea una factura, intenta autorizarla con avisos falsos (deben rechazarse con 401), la autoriza con un aviso firmado y comprueba que repetir el aviso no hace nada.
 
+## 11. Probar la reconciliación (Fase 2)
+Si se pierde un webhook, la factura se queda "en proceso". La reconciliación se la pregunta al proveedor. En desarrollo el proveedor falso autoriza lo que le consultes.
+
+1. Aplica en el SQL Editor `supabase/migrations/20261005000008_reconciliation.sql` (pega el **contenido** del archivo).
+2. En `.env.local` agrega una línea con un secreto de **16 o más caracteres** (inventa uno largo), por ejemplo `CRON_SECRET=un-secreto-largo-de-prueba-123`, y reinicia `npm run dev`.
+3. Ejecuta:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\probar-reconciliacion.ps1 -Key nb_test_TU_CLAVE -CronSecret un-secreto-largo-de-prueba-123
+```
+En producción se programará un cron que llame a `/api/cron/reconcile` con `Authorization: Bearer <CRON_SECRET>` cada pocos minutos.
+
 ## Si algo falla
 - **401 con una clave recién creada** o **500 `internal_error`**: copia las líneas `[api] …` de la terminal donde corre `npm run dev` (no incluyen secretos) y compártelas.
 - **El login no funciona**: ejecuta `npx supabase db reset` otra vez y revisa que `.env.local` tenga las 3 variables.

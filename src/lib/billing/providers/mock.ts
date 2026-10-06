@@ -31,10 +31,18 @@ export class MockBillingProvider implements BillingProvider {
     return result;
   }
 
+  /**
+   * Sin estado (las instancias serverless no comparten memoria): el SRI simulado AUTORIZA todo
+   * documento mock que se le consulte. Sirve para ver el ciclo completo en desarrollo.
+   */
   async getInvoice(_context: ProviderContext, id: string): Promise<ProviderInvoiceResult> {
-    const doc = this.documents.get(id);
-    if (!doc) throw new Error(`Documento mock no encontrado: ${id}`);
-    return doc;
+    return {
+      providerDocumentId: id,
+      status: "authorized",
+      accessKey: `MOCK-AK-${id}`,
+      authorizationNumber: `MOCK-AUTH-${id}`,
+      authorizedAt: new Date().toISOString(),
+    };
   }
 
   async createCreditNote(): Promise<ProviderInvoiceResult> {

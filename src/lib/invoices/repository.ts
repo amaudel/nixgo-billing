@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/api/errors";
 import type { ProviderName } from "@/lib/billing/types";
 import { redactSecrets } from "@/lib/security/sanitize";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { StaleInvoice } from "./reconcile";
 import type { InvoiceRepository } from "./service";
 import { draftResultSchema, invoiceDetailSchema, invoiceSummarySchema } from "./types";
 
@@ -31,7 +32,22 @@ function mapDatabaseError(message: string): ApiError | null {
  * Acceso a datos con service role. TODA consulta lleva organization_id (y ambiente) ya resueltos
  * desde la API key; la RLS no protege este camino.
  */
-export function createInvoiceRepository(): InvoiceRepository {
+const staleSchema = z.array(
+  z.object({
+    id: z.string(),
+    organization_id: z.string(),
+    environment: z.enum(["test", "production"]),
+    provider: z.enum(["mock", "factuplan"]),
+    provider_document_id: z.string(),
+    ruc: z.string(),
+    provider_company_ref: z.string().nullable(),
+    certificate_ref: z.string().nullable(),
+  }),
+);
+
+export function createInvoiceRepository(): InvoiceRepository & {
+  listStale(olderThanMinutes: number, limit: number): Promise<StaleInvoice[]>;
+} {
   const admin = createAdminClient();
 
   return {
@@ -105,6 +121,24 @@ export function createInvoiceRepository(): InvoiceRepository {
       });
       if (error) throw new Error(`apply_provider_result: ${error.message}`);
       return data === true;
+    },
+
+    async listStale(olderThanMinutes, limit) {
+      const { data, error } = await admin.rpc("invoices_to_reconcile", {
+        p_older_than_minutes: olderThanMinutes,
+        p_limit: limit,
+      });
+      if (error) throw new Error(`invoices_to_reconcile: ${error.message}`);
+      return staleSchema.parse(data).map((r) => ({
+        invoiceId: r.id,
+        organizationId: r.organization_id,
+        environment: r.environment,
+        provider: r.provider,
+        providerDocumentId: r.provider_document_id,
+        ruc: r.ruc,
+        providerCompanyRef: r.provider_company_ref ?? undefined,
+        certificateRef: r.certificate_ref ?? undefined,
+      }));
     },
 
     async recordEvent(event) {

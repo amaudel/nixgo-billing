@@ -46,6 +46,7 @@ Solo `providers/` conoce proveedores concretos. Cambiar de proveedor = nueva cla
 5. `provider.createInvoice()` → `processing`. Si el proveedor falla, la factura queda `pending` (502) y **reintentar con la misma `Idempotency-Key` la reanuda**; al proveedor se le propaga el id de la factura como clave de idempotencia.
 6. Webhook del proveedor → `POST /api/webhooks/[provider]` (firma verificada sobre el cuerpo crudo, validado, idempotente por `(provider, event_id)`) → `authorized` / `rejected`. Todo ocurre en `process_webhook_event` (una transacción); la factura se localiza por `(provider, provider_document_id)`. (Implementado en la Fase 2 contra `mock`.)
 7. Cada paso escribe en `billing_events` (append-only, sanitizado).
+8. **Reconciliación** (`/api/cron/reconcile`): si el webhook se pierde, las facturas en `processing` con más de N minutos se consultan con `provider.getInvoice()` y se aplican con la misma función que los webhooks (`src/lib/invoices/reconcile.ts`). `provider.getInvoice` del mock es sin estado y autoriza todo documento mock, para ver el ciclo completo en desarrollo.
 
 ## Decisiones clave
 
